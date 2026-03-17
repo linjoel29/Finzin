@@ -4,8 +4,12 @@ import { ShoppingBag, Sparkles, Loader2, ArrowUpRight, AlertTriangle, ExternalLi
 import api from '../api';
 
 const MOCK_OFFERS = [
-  { id: 1, title: 'Apple Student Discount', description: 'Save up to ₹10,000 on Mac or iPad with education pricing.', platform: 'Apple Education Store', discount: '10', expiry: 'Ongoing', link: 'https://www.apple.com/in-edu/store', emoji: '💻', tag: '🔥 Trending', color: '#000' },
-  { id: 2, title: 'Spotify Premium Student', description: '50% off Premium for Students. Cancel anytime.', platform: 'Spotify', discount: '50', expiry: 'Ongoing', link: 'https://www.spotify.com/student', emoji: '🎵', tag: '🎧 Must Have', color: '#1DB954' },
+  { id: 'o1', title: 'Apple Student Discount', description: 'Save up to ₹10,000 on Mac or iPad with education pricing.', platform: 'Apple Education Store', discount: '10', expiry: 'Ongoing', link: 'https://www.apple.com/in-edu/store', emoji: '💻', tag: '🔥 Trending', color: '#000' },
+  { id: 'o2', title: 'Spotify Premium Student', description: '50% off Premium for Students. Cancel anytime.', platform: 'Spotify', discount: '50', expiry: 'Ongoing', link: 'https://www.spotify.com/student', emoji: '🎵', tag: '🎧 Must Have', color: '#1DB954' },
+  { id: 'o3', title: 'Adobe Creative Cloud', description: 'Save over 60% on 20+ creative apps for students.', platform: 'Adobe', discount: '60', expiry: 'Ongoing', link: 'https://www.adobe.com/creativecloud/buy/students.html', emoji: '🎨', tag: '🖌️ Creative', color: '#FF0000' },
+  { id: 'o4', title: 'Amazon Prime Student', description: '50% off Prime Membership for 1 year.', platform: 'Amazon', discount: '50', expiry: '2026-08-15', link: 'https://www.amazon.in/joinstudent', emoji: '📦', tag: '🚚 Fast Delivery', color: '#FF9900' },
+  { id: 'o5', title: 'YouTube Premium Student', description: 'Ad-free YouTube and Music at a student-friendly price.', platform: 'YouTube', discount: '40', expiry: 'Ongoing', link: 'https://www.youtube.com/premium/student', emoji: '📺', tag: '🎬 Ad-Free', color: '#FF0000' },
+  { id: 'o6', title: 'Samsung Student Perks', description: 'Additional 10% off on Galaxy smartphones and tablets.', platform: 'Samsung Shop', discount: '10', expiry: '2026-12-25', link: 'https://www.samsung.com/in/microsite/student-advantage/', emoji: '📱', tag: '📱 Tech Deals', color: '#1428a0' },
 ];
 
 function RedirectionModal({ offer, onConfirm, onCancel }) {
@@ -79,7 +83,11 @@ export default function Offers() {
     setLoading(true);
     api.get('/api/offers')
       .then(r => setOffers(r.data.offers?.length > 0 ? r.data.offers : MOCK_OFFERS))
-      .catch(() => setOffers(MOCK_OFFERS))
+      .catch((err) => {
+        console.error("Failed to fetch offers:", err);
+        console.error(err);
+        setOffers(MOCK_OFFERS);
+      })
       .finally(() => setLoading(false));
   }, []);
 

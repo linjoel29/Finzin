@@ -35,6 +35,7 @@ export default function BudgetBuddy({ user, monthlyBudget = 5000, spentThisWeek 
       setNotifications(res.data.notifications || []);
       setBudgetUsedPct(res.data.budget_used_pct || 0);
     } catch (e) {
+      console.error("AI Insights Error:", e);
       setAdvice(`Hey ${user?.name || 'there'} 👋 Looking for ways to optimize your budget? I can help you save more for your goals!`);
     }
     setLoading(false);

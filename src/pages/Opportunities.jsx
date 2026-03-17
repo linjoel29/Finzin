@@ -8,15 +8,17 @@ import {
 import api from '../api';
 
 const MOCK_SCHOLARSHIPS = [
-  { id: 1, name: 'HDFC Badhte Kadam Scholarship', eligibility: 'Class 9-12 / UG Students', amount: '₹ 1,00,000', deadline: '31 Mar 2026', link: 'https://www.buddy4study.com/page/hdfc-bank-parivartan-ecss-scholarship' },
-  { id: 2, name: 'Reliance Foundation Undergraduate', eligibility: '1st Year UG Students', amount: '₹ 2,00,000', deadline: '15 Apr 2026', link: 'https://www.reliancefoundation.org/scholarships' },
-  { id: 3, name: 'Google Generation Scholarship', eligibility: 'CS / Tech Students', amount: '₹ 2,50,000', deadline: 'May 2026', link: 'https://buildyourfuture.withgoogle.com/scholarships/generation-google-scholarship-apac' }
+  { id: 's1', name: 'HDFC Badhte Kadam Scholarship', eligibility: 'Class 9-12 / UG Students', amount: '₹ 1,00,000', deadline: '31 Mar 2026', link: 'https://www.buddy4study.com/page/hdfc-bank-parivartan-ecss-scholarship' },
+  { id: 's2', name: 'Reliance Foundation Undergraduate', eligibility: '1st Year UG Students', amount: '₹ 2,00,000', deadline: '15 Apr 2026', link: 'https://www.reliancefoundation.org/scholarships' },
+  { id: 's3', name: 'Google Generation Scholarship', eligibility: 'CS / Tech Students', amount: '₹ 2,50,000', deadline: 'May 2026', link: 'https://buildyourfuture.withgoogle.com/scholarships/generation-google-scholarship-apac' },
+  { id: 's4', name: 'Adobe Women in Technology', eligibility: 'Female CS Students', amount: '₹ 3,00,000', deadline: '15 Jun 2026', link: 'https://www.adobe.com/in/creativecloud/buy/students/scholarships.html' }
 ];
 
 const MOCK_JOBS = [
-  { id: 1, title: 'UX Design Intern', type: 'Remote', pay: '₹ 25k/mo', location: 'Zomato', link: 'https://www.zomato.com/careers' },
-  { id: 2, title: 'Software Engineer (Part-time)', type: 'Hybrid', pay: '₹ 40k/mo', location: 'Swiggy', link: 'https://www.swiggy.com/careers' },
-  { id: 3, title: 'Content Creator', type: 'Remote', pay: '₹ 15k/mo', location: 'Finzin AI', link: '#' }
+  { id: 'j1', title: 'UX Design Intern', type: 'Remote', pay: '₹ 25k/mo', location: 'Zomato', link: 'https://www.zomato.com/careers' },
+  { id: 'j2', title: 'Software Engineer Intern', type: 'Hybrid', pay: '₹ 40k/mo', location: 'Swiggy', link: 'https://www.swiggy.com/careers' },
+  { id: 'j3', title: 'Content Creator', type: 'Remote', pay: '₹ 15k/mo', location: 'Finzin AI', link: 'https://internshala.com' },
+  { id: 'j4', title: 'Content Writer', type: 'Remote', pay: '₹ 10k/mo', location: 'EduTech', link: 'https://internshala.com' }
 ];
 
 export default function Opportunities() {
@@ -35,6 +37,7 @@ export default function Opportunities() {
       setScholarships(scholRes.data.scholarships?.length ? scholRes.data.scholarships : MOCK_SCHOLARSHIPS);
       setJobs(jobsRes.data.jobs?.length ? jobsRes.data.jobs : MOCK_JOBS);
     } catch (e) { 
+      console.error("Failed to fetch opportunities:", e);
       setScholarships(MOCK_SCHOLARSHIPS);
       setJobs(MOCK_JOBS);
     } finally {
