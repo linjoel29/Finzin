@@ -20,66 +20,72 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log(isLogin ? "Login button clicked" : "Register button clicked");
     setError(''); 
 
-    // Front-end Validation
-    if (!form.email) return setError('Email is required');
-    if (form.password.length < 6) return setError('Password must be at least 6 characters');
+    // Validation
+    if (!form.email || !form.password) {
+      return setError('Please fill all fields');
+    }
+    if (form.password.length < 6) {
+      return setError('Password must be at least 6 characters');
+    }
     if (!isLogin) {
-      if (!form.name) return setError('Name is required');
-      if (!form.phone) return setError('Phone number is required');
+      if (!form.name || !form.phone) return setError('Please fill all fields');
       if (form.phone.length < 10) return setError('Enter a valid phone number');
     }
 
     setLoading(true);
     try {
       if (isLogin) {
-        try {
-          const userCred = await loginUser(form.email, form.password);
-          login(userCred.user);
-          await fetchWallet(userCred.user.uid);
-          navigate('/dashboard');
-        } catch (err) {
-          let message = "Invalid email or password. Please try again.";
-          if (err.code === "auth/user-not-found") message = "No account found with this email.";
-          if (err.code === "auth/wrong-password") message = "Incorrect password.";
-          setError(message);
-        }
+        const userCred = await loginUser(form.email, form.password);
+        login(userCred.user);
+        await fetchWallet(userCred.user.uid);
+        navigate('/dashboard');
       } else {
-        try {
-          const userCred = await registerUser(form.email, form.password);
-          await createUserProfile(userCred.user.uid, {
-            name: form.name,
-            email: form.email,
-            phone: form.phone
-          });
-          
-          alert("Registration successful! Please login to continue.");
-          setIsLogin(true); // Redirect to login tab
-          setForm({ ...form, password: '' });
-        } catch (error) {
-          let message = "";
-          switch (error.code) {
-            case "auth/email-already-in-use":
-              message = "This email is already registered. Please login.";
-              break;
-            case "auth/invalid-email":
-              message = "Invalid email format.";
-              break;
-            case "auth/weak-password":
-              message = "Password must be at least 6 characters.";
-              break;
-            default:
-              message = "Something went wrong. Please try again.";
-          }
-          setError(message);
-        }
+        const userCred = await registerUser(form.email, form.password);
+        await createUserProfile(userCred.user.uid, {
+          name: form.name,
+          email: form.email,
+          phone: form.phone
+        });
+        
+        console.log("Registration successful for:", userCred.user.email);
+        alert("Registration successful! Please login to continue.");
+        setIsLogin(true); 
+        setForm({ ...form, password: '' });
       }
     } catch (err) {
-      console.error(err);
-      setError('An unexpected error occurred. Please try again.');
+      console.error("Firebase Error:", err);
+      let message = "";
+      
+      switch (err.code) {
+        case "auth/email-already-in-use":
+          message = "This email is already registered. Please login.";
+          break;
+        case "auth/invalid-email":
+          message = "Invalid email format.";
+          break;
+        case "auth/weak-password":
+          message = "Password must be at least 6 characters.";
+          break;
+        case "auth/user-not-found":
+          message = "No account found with this email.";
+          break;
+        case "auth/wrong-password":
+          message = "Incorrect password.";
+          break;
+        default:
+          message = err.message || "Something went wrong. Please try again.";
+      }
+      
+      setError(message);
+      if (!isLogin) alert(message); // User specifically requested alert for register errors
+    } finally {
+      // 🔥 ALWAYS stop loading
+      setLoading(false);
+      console.log("Loading state cleared");
     }
-    setLoading(false);
   };
 
   return (
