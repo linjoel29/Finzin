@@ -1,8 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Camera, Upload, ChevronLeft, CreditCard } from 'lucide-react';
-import api from '../api';
-import jsQR from 'jsqr';
+import { Html5Qrcode } from "html5-qrcode";
 import PaymentStatus from './PaymentStatus';
 
 const BRAND_CATEGORIES = {
@@ -32,10 +31,8 @@ export default function ScanPay({ userId, onSuccess }) {
   const [isScanning, setIsScanning] = useState(false);
   const [uploadMessage, setUploadMessage] = useState('');
   
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
+  const scannerRef = useRef(null);
   const fileInputRef = useRef(null);
-  const requestRef = useRef(null);
 
   const handleScanSuccess = (decodedData) => {
     setReceiverId(decodedData);
@@ -56,68 +53,67 @@ export default function ScanPay({ userId, onSuccess }) {
   const startCamera = async () => {
     setIsScanning(true);
     setError('');
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.setAttribute('playsinline', 'true');
-        videoRef.current.play();
-        requestRef.current = requestAnimationFrame(tick);
+    
+    setTimeout(() => {
+      try {
+        const html5QrCode = new Html5Qrcode("reader");
+        scannerRef.current = html5QrCode;
+
+        const qrCodeSuccessCallback = (decodedText) => {
+          handleScanSuccess(decodedText);
+        };
+
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+        html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback)
+          .catch((err) => {
+            console.error("Scanner failed to start:", err);
+            setError('Camera access denied or error occurred.');
+            setIsScanning(false);
+          });
+      } catch (err) {
+        console.error("Scanner init error:", err);
+        setError('Failed to initialize scanner.');
+        setIsScanning(false);
       }
-    } catch (err) {
-      setError('Camera access denied. Use upload instead.');
-      setIsScanning(false);
-    }
+    }, 100);
   };
 
-  const stopCamera = () => {
+  const stopCamera = async () => {
     setIsScanning(false);
-    if (videoRef.current && videoRef.current.srcObject) {
-      videoRef.current.srcObject.getTracks().forEach(t => t.stop());
-      videoRef.current.srcObject = null;
+    if (scannerRef.current && scannerRef.current.isScanning) {
+      try {
+        await scannerRef.current.stop();
+        scannerRef.current = null;
+      } catch (err) {
+        console.error("Failed to stop scanner:", err);
+      }
     }
-    cancelAnimationFrame(requestRef.current);
-  };
-
-  const tick = () => {
-    if (videoRef.current && videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA) {
-      const canvas = canvasRef.current;
-      const context = canvas.getContext('2d', { willReadFrequently: true });
-      canvas.height = videoRef.current.videoHeight;
-      canvas.width = videoRef.current.videoWidth;
-      context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-      const code = jsQR(imageData.data, imageData.width, imageData.height);
-      if (code) return handleScanSuccess(code.data);
-    }
-    if (isScanning) requestRef.current = requestAnimationFrame(tick);
   };
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     setUploadMessage('Processing...');
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width; canvas.height = img.height;
-        canvas.getContext('2d').drawImage(img, 0, 0);
-        const code = jsQR(canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height);
-        if (code) handleScanSuccess(code.data);
-        else { setError('QR not found.'); setUploadMessage(''); }
-      };
-      img.src = event.target.result;
-    };
-    reader.readAsDataURL(file);
+    
+    const html5QrCode = new Html5Qrcode("reader-hidden");
+    html5QrCode.scanFile(file, true)
+      .then(decodedText => {
+        handleScanSuccess(decodedText);
+        setUploadMessage('');
+      })
+      .catch(err => {
+        console.error("File scan failed:", err);
+        setError('QR code not found in image.');
+        setUploadMessage('');
+      });
   };
 
   const handlePay = async () => {
     if (!amount || parseFloat(amount) <= 0) return setError('Enter valid amount');
     setError(''); setLoading(true);
     try {
-      const { getUserProfile, createUserProfile, addTransaction } = await import('../firebase/db');
+      const { getUserProfile, addTransaction } = await import('../firebase/db');
       const profile = await getUserProfile(userId);
       const amt = parseFloat(amount);
 
@@ -170,14 +166,23 @@ export default function ScanPay({ userId, onSuccess }) {
                   </button>
                 </div>
               ) : (
-                <>
-                  <video ref={videoRef} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  <div style={{ position: 'absolute', inset: '20%', border: '2px solid var(--primary)', borderRadius: '1rem', boxShadow: '0 0 0 1000px rgba(0,0,0,0.6)' }} />
-                  <button onClick={stopCamera} style={{ position: 'absolute', bottom: '1rem', background: 'rgba(239,68,68,0.8)', border: 'none', color: 'white', padding: '0.6rem 1.25rem', borderRadius: '0.75rem', fontSize: '0.8rem', cursor: 'pointer' }}>Cancel</button>
-                </>
+                <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+                  <div id="reader" style={{ width: '100%', height: '100%' }}></div>
+                  <button 
+                    onClick={stopCamera} 
+                    style={{ 
+                      position: 'absolute', bottom: '1rem', left: '50%', transform: 'translateX(-50%)',
+                      background: 'rgba(239,68,68,0.9)', border: 'none', color: 'white', 
+                      padding: '0.6rem 1.25rem', borderRadius: '0.75rem', fontSize: '0.8rem', 
+                      cursor: 'pointer', zIndex: 10
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
               )}
             </div>
-            <canvas ref={canvasRef} style={{ display: 'none' }} />
+            <div id="reader-hidden" style={{ display: 'none' }}></div>
             <div style={{ marginTop: '1rem' }}>
               <input type="file" accept="image/*" ref={fileInputRef} onChange={handleFileUpload} style={{ display: 'none' }} />
               <button className="btn-secondary" onClick={() => fileInputRef.current.click()} style={{ width: '100%' }}>
