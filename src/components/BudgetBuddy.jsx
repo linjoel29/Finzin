@@ -22,6 +22,24 @@ export default function BudgetBuddy({ user, monthlyBudget = 5000, spentThisWeek 
   const fetchAdvice = useCallback(async (customQuestion = '') => {
     if (!user) return;
     setLoading(true);
+
+    // Frontend Rule-based Logic (Mirroring backend)
+    const usedPct = ((monthlyBudget - remainingBalance) / monthlyBudget) * 100;
+    setBudgetUsedPct(Math.round(usedPct * 10) / 10);
+
+    const newNotifications = [];
+    if (usedPct >= 70) {
+      newNotifications.push({ type: 'warning', message: `⚠️ You have used ${Math.round(usedPct)}% of your monthly budget.` });
+    }
+    if (remainingBalance < 500) {
+      newNotifications.push({ type: 'danger', message: `🔴 Low balance! Only ₹${Math.round(remainingBalance)} remaining this month.` });
+    }
+    const weeklyPct = (spentThisWeek / monthlyBudget) * 100;
+    if (weeklyPct >= 40) {
+      newNotifications.push({ type: 'warning', message: `📊 You've spent ${Math.round(weeklyPct)}% of your budget this week (mostly on ${topCategory}).` });
+    }
+    setNotifications(newNotifications);
+
     try {
       const res = await api.post('/api/ai-budget-insight', {
         monthly_budget: monthlyBudget,
@@ -32,11 +50,13 @@ export default function BudgetBuddy({ user, monthlyBudget = 5000, spentThisWeek 
         custom_question: customQuestion,
       });
       setAdvice(res.data.advice);
-      setNotifications(res.data.notifications || []);
-      setBudgetUsedPct(res.data.budget_used_pct || 0);
+      // If backend returns more sophisticated notifications, we can merge or prefer them
+      if (res.data.notifications?.length) {
+        setNotifications(res.data.notifications);
+      }
     } catch (e) {
       console.error("AI Insights Error:", e);
-      setAdvice(`Hey ${user?.name || 'there'} 👋 Looking for ways to optimize your budget? I can help you save more for your goals!`);
+      setAdvice(`Hey ${user?.name || 'there'} 👋 Based on your spend of ₹${spentThisWeek} this week, try to stay mindful of your remaining ₹${remainingBalance} budget! 🎯`);
     }
     setLoading(false);
   }, [user, monthlyBudget, spentThisWeek, remainingBalance, topCategory]);

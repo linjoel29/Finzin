@@ -8,7 +8,6 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useWallet } from '../contexts/WalletContext';
 import { useNavigate } from 'react-router-dom';
-import api from '../api';
 import ScanPay from '../components/ScanPay';
 import PayContact from '../components/PayContact';
 import AddMoney from '../components/AddMoney';

@@ -6,7 +6,6 @@ import {
   Target, Loader2
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import api from '../api';
 import BudgetBuddy from '../components/BudgetBuddy';
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
