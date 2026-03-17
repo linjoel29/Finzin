@@ -11,10 +11,28 @@ export default function AddMoney({ userId, onSuccess }) {
   const handleAdd = async () => {
     setError(''); setLoading(true);
     try {
-      await api.post('/api/wallet/add-money', { user_id: userId, amount: parseFloat(amount) });
+      const { getUserProfile, addTransaction } = await import('../firebase/db');
+      const { doc, updateDoc, db } = await import('firebase/firestore');
+      
+      const profile = await getUserProfile(userId);
+      const amt = parseFloat(amount);
+
+      await updateDoc(doc(db, "users", userId), {
+        wallet: (profile?.wallet || 0) + amt
+      });
+
+      await addTransaction(userId, {
+        amount: amt,
+        type: 'credit',
+        category: 'Income',
+        description: 'Added money to wallet',
+        date: new Date().toISOString()
+      });
+
       onSuccess(`✅ Added ₹${amount} to wallet!`);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to add money');
+      console.error(err);
+      setError('Failed to add money. Please try again.');
     }
     setLoading(false);
   };

@@ -10,12 +10,44 @@ export default function SavingsPocket({ userId, wallet, savings, onSuccess }) {
   const handleAction = async () => {
     setError(''); setLoading(true);
     try {
-      const endpoint = mode === 'move' ? '/api/wallet/move-to-savings' : '/api/wallet/withdraw-savings';
-      await api.post(endpoint, { user_id: userId, amount: parseFloat(amount) });
-      const msg = mode === 'move' ? `🐷 Moved ₹${amount} to Savings!` : `💰 Withdrawn ₹${amount} from Savings!`;
-      onSuccess(msg);
+      const { getUserProfile, addTransaction } = await import('../firebase/db');
+      const { doc, updateDoc, db } = await import('firebase/firestore');
+      
+      const profile = await getUserProfile(userId);
+      const amt = parseFloat(amount);
+
+      if (mode === 'move') {
+        if (!profile || profile.wallet < amt) throw new Error('Insufficient wallet balance');
+        await updateDoc(doc(db, "users", userId), {
+          wallet: profile.wallet - amt,
+          savings: (profile.savings || 0) + amt
+        });
+        await addTransaction(userId, {
+          amount: amt,
+          type: 'debit',
+          category: 'Savings',
+          description: 'Moved to Savings Pocket',
+          date: new Date().toISOString()
+        });
+        onSuccess(`🐷 Moved ₹${amount} to Savings!`);
+      } else {
+        if (!profile || (profile.savings || 0) < amt) throw new Error('Insufficient savings balance');
+        await updateDoc(doc(db, "users", userId), {
+          wallet: (profile.wallet || 0) + amt,
+          savings: profile.savings - amt
+        });
+        await addTransaction(userId, {
+          amount: amt,
+          type: 'credit',
+          category: 'Savings',
+          description: 'Withdrawn from Savings Pocket',
+          date: new Date().toISOString()
+        });
+        onSuccess(`💰 Withdrawn ₹${amount} from Savings!`);
+      }
     } catch (err) {
-      setError(err.response?.data?.detail || 'Action failed');
+      console.error(err);
+      setError(err.message || 'Action failed');
     }
     setLoading(false);
   };

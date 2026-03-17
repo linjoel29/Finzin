@@ -20,16 +20,35 @@ export default function PayContact({ userId, onSuccess }) {
     if (!phone || !amount || !category) return setError('Missing fields');
     setError(''); setLoading(true);
     try {
-      const res = await api.post('/api/wallet/pay-phone', {
-        sender_id: userId,
-        phone,
-        amount: parseFloat(amount),
-        category
+      const { getUserProfile, addTransaction } = await import('../firebase/db');
+      const profile = await getUserProfile(userId);
+      const amt = parseFloat(amount);
+
+      if (!profile || profile.wallet < amt) {
+        throw new Error('Insufficient balance');
+      }
+
+      // Update wallet balance
+      const { doc, updateDoc, db } = await import('firebase/firestore');
+      await updateDoc(doc(db, "users", userId), {
+        wallet: profile.wallet - amt
       });
-      setReceiverName(res.data.receiver);
+
+      // Record transaction
+      await addTransaction(userId, {
+        amount: amt,
+        type: 'debit',
+        category,
+        description: `Sent to ${phone}`,
+        date: new Date().toISOString()
+      });
+
+      setReceiverName(phone);
       setPaymentStatus('success');
       setStep(3);
     } catch (err) {
+      console.error(err);
+      setError(err.message === 'Insufficient balance' ? 'Insufficient balance' : 'Payment failed');
       setPaymentStatus('failure');
       setStep(3);
     }

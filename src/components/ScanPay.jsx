@@ -117,16 +117,34 @@ export default function ScanPay({ userId, onSuccess }) {
     if (!amount || parseFloat(amount) <= 0) return setError('Enter valid amount');
     setError(''); setLoading(true);
     try {
-      await api.post('/api/wallet/scan-pay', {
-        sender_id: userId,
-        receiver_id: receiverId,
-        amount: parseFloat(amount),
-        note: note || `Payment to ${receiverId}`,
-        category: category || 'Other'
+      const { getUserProfile, createUserProfile, addTransaction } = await import('../firebase/db');
+      const profile = await getUserProfile(userId);
+      const amt = parseFloat(amount);
+
+      if (!profile || profile.wallet < amt) {
+        throw new Error('Insufficient balance');
+      }
+
+      // Update wallet balance
+      const { doc, updateDoc, db } = await import('firebase/firestore');
+      await updateDoc(doc(db, "users", userId), {
+        wallet: profile.wallet - amt
       });
+
+      // Record transaction
+      await addTransaction(userId, {
+        amount: amt,
+        type: 'debit',
+        category: category || 'Other',
+        description: `Paid to ${receiverId}`,
+        date: new Date().toISOString()
+      });
+
       setPaymentStatus('success');
       setStep(4);
     } catch (err) {
+      console.error(err);
+      setError(err.message === 'Insufficient balance' ? 'Insufficient balance' : 'Payment failed');
       setPaymentStatus('failure');
       setStep(4);
     }

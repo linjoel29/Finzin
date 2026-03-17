@@ -40,14 +40,41 @@ export default function AIBudget() {
 
   const fetchAll = useCallback(async () => {
     if (!user) return;
+    setLoading(true);
     try {
-      const [expRes, insRes] = await Promise.all([
-        api.get(`/api/expenses/${user.id}`),
-        api.get(`/api/insights/${user.id}`),
-      ]);
-      setExpenses(expRes.data.expenses || []);
-      setInsights(insRes.data.insights || []);
-      setCatTotals(insRes.data.category_totals || {});
+      const { getTransactions } = await import('../firebase/db');
+      const txns = await getTransactions(user.uid);
+      const debits = txns.filter(t => t.type === 'debit');
+      setExpenses(debits);
+      
+      // Calculate category totals
+      const totals = {};
+      debits.forEach(e => {
+        totals[e.category] = (totals[e.category] || 0) + e.amount;
+      });
+      setCatTotals(totals);
+
+      // Generate Frontend Insights (replacing backend logic)
+      const newInsights = [];
+      const totalSpent = debits.reduce((s, e) => s + e.amount, 0);
+      
+      if (debits.length === 0) {
+        newInsights.push({ type: 'info', message: 'No expenses recorded yet. Start making payments to get insights!', icon: '💡' });
+      } else {
+        if (totalSpent > MONTHLY_BUDGET * 0.8) {
+          newInsights.push({ type: 'danger', message: `⚠️ You have used ${((totalSpent/MONTHLY_BUDGET)*100).toFixed(0)}% of your monthly budget.`, icon: '⚠️' });
+        } else {
+          newInsights.push({ type: 'success', message: '✅ Great job! You\'re on track to finish the month within budget.', icon: '✅' });
+        }
+        
+        Object.entries(totals).forEach(([cat, amt]) => {
+          if (amt > MONTHLY_BUDGET * 0.3) {
+            newInsights.push({ type: 'warning', message: `You spent a lot on ${cat} this month. Consider reducing it.`, icon: '⚠️' });
+          }
+        });
+      }
+      setInsights(newInsights);
+
     } catch (e) {
       console.error('Failed to fetch AI Budget data:', e);
     } finally {
@@ -56,14 +83,14 @@ export default function AIBudget() {
   }, [user]);
 
   useEffect(() => {
-    let active = true;
-    if (active) fetchAll();
-    return () => { active = false; };
+    fetchAll();
   }, [fetchAll]);
 
   const handleDelete = async (id) => {
     try {
-      await api.delete(`/api/expenses/${id}`);
+      const { db } = await import('../firebase/config');
+      const { doc, deleteDoc } = await import('firebase/firestore');
+      await deleteDoc(doc(db, "users", user.uid, "transactions", id));
       fetchAll();
       setBudgetRefresh(v => v + 1);
     } catch (e) {

@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, User, Phone, ArrowRight, Wallet2, Sparkles } from 'lucide-react';
-import api from '../api';
+import { loginUser, registerUser } from '../firebase/auth';
+import { createUserProfile } from '../firebase/db';
 import { useAuth } from '../contexts/AuthContext';
 import { useWallet } from '../contexts/WalletContext';
 
@@ -21,14 +22,24 @@ export default function Login() {
     e.preventDefault();
     setError(''); setLoading(true);
     try {
-      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
-      const payload = isLogin ? { email: form.email, password: form.password } : form;
-      const res = await api.post(endpoint, payload);
-      login(res.data.user);
-      await fetchWallet(res.data.user.id);
+      if (isLogin) {
+        const userCred = await loginUser(form.email, form.password);
+        login(userCred.user);
+        await fetchWallet(userCred.user.uid);
+      } else {
+        const userCred = await registerUser(form.email, form.password);
+        await createUserProfile(userCred.user.uid, {
+          name: form.name,
+          email: form.email,
+          phone: form.phone
+        });
+        login(userCred.user);
+        await fetchWallet(userCred.user.uid);
+      }
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.detail || 'Authentication failed. Please check your credentials.');
+      console.error(err);
+      setError('Invalid credentials or user already exists. Please try again.');
     }
     setLoading(false);
   };
@@ -140,11 +151,6 @@ export default function Login() {
             </button>
           </form>
 
-          {/* Quick Access Info */}
-          <div style={{ marginTop: '2rem', padding: '1.25rem', background: 'var(--accent-start)', borderRadius: '16px', border: '1px solid var(--primary)', fontSize: '0.85rem' }}>
-            <p style={{ color: '#1e293b', fontWeight: 800, marginBottom: '0.25rem' }}>Demo Access:</p>
-            <p style={{ color: '#475569', fontWeight: 600 }}>arjun@student.edu • <span style={{ color: '#000' }}>demo123</span></p>
-          </div>
         </div>
 
         {/* UN SDG Footer */}

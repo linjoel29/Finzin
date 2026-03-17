@@ -75,7 +75,7 @@ export default function Dashboard() {
     };
   }, [transactions]);
 
-  useEffect(() => { if (user) fetchWallet(user.id); }, [user, fetchWallet]);
+  useEffect(() => { if (user) fetchWallet(user.uid); }, [user, fetchWallet]);
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
@@ -84,13 +84,10 @@ export default function Dashboard() {
 
   const refreshWallet = async () => {
     try {
-      const [wr, tr] = await Promise.all([
-        api.get(`/api/wallet/${user.id}`),
-        api.get(`/api/wallet/transactions/${user.id}`),
-      ]);
-      setWallet(wr.data.wallet); setSavings(wr.data.savings);
-      setTransactions(tr.data.transactions);
-      setBudgetRefresh(v => v + 1);
+      if (user) {
+        await fetchWallet(user.uid);
+        setBudgetRefresh(v => v + 1);
+      }
     } catch (e) {
       console.error('Wallet refresh failed', e);
     }
@@ -290,10 +287,10 @@ export default function Dashboard() {
       </motion.button>
 
       <AnimatePresence>
-        {modal === 'scan' && <Modal title="Scan & Pay" onClose={() => setModal(null)}><ScanPay userId={user.id} onSuccess={(msg) => { refreshWallet(); setModal(null); showToast(msg); }} /></Modal>}
-        {modal === 'pay' && <Modal title="Pay Contact" onClose={() => setModal(null)}><PayContact userId={user.id} onSuccess={(msg) => { refreshWallet(); setModal(null); showToast(msg); }} /></Modal>}
-        {modal === 'addmoney' && <Modal title="Add Money" onClose={() => setModal(null)}><AddMoney userId={user.id} onSuccess={(msg) => { refreshWallet(); setModal(null); showToast(msg); }} /></Modal>}
-        {modal === 'savings' && <Modal title="Savings Pocket" onClose={() => setModal(null)}><SavingsPocket userId={user.id} wallet={wallet} savings={savings} onSuccess={(msg) => { refreshWallet(); setModal(null); showToast(msg); }} /></Modal>}
+        {modal === 'scan' && <Modal title="Scan & Pay" onClose={() => setModal(null)}><ScanPay userId={user.uid} onSuccess={(msg) => { refreshWallet(); setModal(null); showToast(msg); }} /></Modal>}
+        {modal === 'pay' && <Modal title="Pay Contact" onClose={() => setModal(null)}><PayContact userId={user.uid} onSuccess={(msg) => { refreshWallet(); setModal(null); showToast(msg); }} /></Modal>}
+        {modal === 'addmoney' && <Modal title="Add Money" onClose={() => setModal(null)}><AddMoney userId={user.uid} onSuccess={(msg) => { refreshWallet(); setModal(null); showToast(msg); }} /></Modal>}
+        {modal === 'savings' && <Modal title="Savings Pocket" onClose={() => setModal(null)}><SavingsPocket userId={user.uid} wallet={wallet} savings={savings} onSuccess={(msg) => { refreshWallet(); setModal(null); showToast(msg); }} /></Modal>}
         {toast && (
           <motion.div 
             initial={{ y: 20, opacity: 0, x: '-50%' }}
