@@ -20,26 +20,64 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(''); setLoading(true);
+    setError(''); 
+
+    // Front-end Validation
+    if (!form.email) return setError('Email is required');
+    if (form.password.length < 6) return setError('Password must be at least 6 characters');
+    if (!isLogin) {
+      if (!form.name) return setError('Name is required');
+      if (!form.phone) return setError('Phone number is required');
+      if (form.phone.length < 10) return setError('Enter a valid phone number');
+    }
+
+    setLoading(true);
     try {
       if (isLogin) {
-        const userCred = await loginUser(form.email, form.password);
-        login(userCred.user);
-        await fetchWallet(userCred.user.uid);
+        try {
+          const userCred = await loginUser(form.email, form.password);
+          login(userCred.user);
+          await fetchWallet(userCred.user.uid);
+          navigate('/dashboard');
+        } catch (err) {
+          let message = "Invalid email or password. Please try again.";
+          if (err.code === "auth/user-not-found") message = "No account found with this email.";
+          if (err.code === "auth/wrong-password") message = "Incorrect password.";
+          setError(message);
+        }
       } else {
-        const userCred = await registerUser(form.email, form.password);
-        await createUserProfile(userCred.user.uid, {
-          name: form.name,
-          email: form.email,
-          phone: form.phone
-        });
-        login(userCred.user);
-        await fetchWallet(userCred.user.uid);
+        try {
+          const userCred = await registerUser(form.email, form.password);
+          await createUserProfile(userCred.user.uid, {
+            name: form.name,
+            email: form.email,
+            phone: form.phone
+          });
+          
+          alert("Registration successful! Please login to continue.");
+          setIsLogin(true); // Redirect to login tab
+          setForm({ ...form, password: '' });
+        } catch (error) {
+          let message = "";
+          switch (error.code) {
+            case "auth/email-already-in-use":
+              message = "This email is already registered. Please login.";
+              break;
+            case "auth/invalid-email":
+              message = "Invalid email format.";
+              break;
+            case "auth/weak-password":
+              message = "Password must be at least 6 characters.";
+              break;
+            default:
+              message = "Something went wrong. Please try again.";
+          }
+          setError(message);
+        }
       }
-      navigate('/dashboard');
     } catch (err) {
       console.error(err);
-      setError('Invalid credentials or user already exists. Please try again.');
+      setError('An unexpected error occurred. Please try again.');
     }
     setLoading(false);
   };
