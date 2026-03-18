@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, User, Phone, ArrowRight, Wallet2, Sparkles } from 'lucide-react';
-import api from '../api';
+import { loginUser, registerUser } from '../firebase/auth';
+import { createUserProfile } from '../firebase/db';
 import { useAuth } from '../contexts/AuthContext';
-import { useWallet } from '../contexts/WalletContext';
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
@@ -12,7 +12,6 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
-  const { fetchWallet } = useWallet();
   const navigate = useNavigate();
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
@@ -37,36 +36,27 @@ export default function Login() {
     setLoading(true);
     try {
       if (isLogin) {
-        const res = await api.post('/api/auth/login', { email: form.email, password: form.password });
-        if (res.data.success) {
-          login(res.data.user);
-          await fetchWallet(res.data.user.id);
-          navigate('/dashboard');
-        }
+        const userCred = await loginUser(form.email, form.password);
+        login(userCred.user);
+        navigate('/dashboard');
       } else {
-        const res = await api.post('/api/auth/register', {
+        const userCred = await registerUser(form.email, form.password);
+        await createUserProfile(userCred.user.uid, {
           name: form.name,
           email: form.email,
-          password: form.password,
           phone: form.phone
         });
         
-        if (res.data.success) {
-          console.log("Registration successful for:", res.data.user.email);
-          alert("Registration successful! Please login to continue.");
-          setIsLogin(true); 
-          setForm({ ...form, password: '' });
-        }
+        console.log("Registration successful for:", userCred.user.email);
+        alert("Registration successful! Please login to continue.");
+        setIsLogin(true); 
+        setForm({ ...form, password: '' });
       }
     } catch (err) {
-      console.error("API Error:", err);
-      let message = "Something went wrong. Please try again.";
-      if (err.response && err.response.data && err.response.data.detail) {
-        message = err.response.data.detail;
-      }
-      
+      console.error("Auth Error:", err);
+      const message = err.message || "Something went wrong. Please try again.";
       setError(message);
-      if (!isLogin) alert(message); // User specifically requested alert for register errors
+      if (!isLogin) alert(message);    
     } finally {
       // 🔥 ALWAYS stop loading
       setLoading(false);
