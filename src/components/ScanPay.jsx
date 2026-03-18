@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
+import api from '../api';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Camera, Upload, ChevronLeft, CreditCard } from 'lucide-react';
 import { Html5Qrcode } from "html5-qrcode";
@@ -17,7 +18,7 @@ const BRAND_CATEGORIES = {
 
 const CATEGORIES = ['Food', 'Transport', 'Shopping', 'Entertainment', 'Education', 'Other'];
 
-export default function ScanPay({ userId, onSuccess }) {
+export default memo(function ScanPay({ userId, onSuccess }) {
   const [step, setStep] = useState(1); // 1: scan, 2: context, 3: pay, 4: status
   const [receiverId, setReceiverId] = useState('');
   const [amount, setAmount] = useState('');
@@ -113,34 +114,18 @@ export default function ScanPay({ userId, onSuccess }) {
     if (!amount || parseFloat(amount) <= 0) return setError('Enter valid amount');
     setError(''); setLoading(true);
     try {
-      const { getUserProfile, addTransaction } = await import('../firebase/db');
-      const profile = await getUserProfile(userId);
-      const amt = parseFloat(amount);
-
-      if (!profile || profile.wallet < amt) {
-        throw new Error('Insufficient balance');
-      }
-
-      // Update wallet balance
-      const { doc, updateDoc, db } = await import('firebase/firestore');
-      await updateDoc(doc(db, "users", userId), {
-        wallet: profile.wallet - amt
-      });
-
-      // Record transaction
-      await addTransaction(userId, {
-        amount: amt,
-        type: 'debit',
+      await api.post('/api/transactions', {
+        user_id: userId,
+        amount: parseFloat(amount),
         category: category || 'Other',
-        description: `Paid to ${receiverId}`,
-        date: new Date().toISOString()
+        note: note || `Paid to ${receiverId}`
       });
 
       setPaymentStatus('success');
       setStep(4);
     } catch (err) {
       console.error(err);
-      setError(err.message === 'Insufficient balance' ? 'Insufficient balance' : 'Payment failed');
+      setError(err.response?.data?.detail || 'Payment failed');
       setPaymentStatus('failure');
       setStep(4);
     }
@@ -275,4 +260,4 @@ export default function ScanPay({ userId, onSuccess }) {
       {error && <p style={{ color: 'var(--error)', fontSize: '0.85rem', textAlign: 'center', marginTop: '1rem', fontWeight: 600 }}>{error}</p>}
     </div>
   );
-}
+});

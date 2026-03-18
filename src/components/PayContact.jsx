@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
+import api from '../api';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Send, User, ChevronLeft } from 'lucide-react';
-import api from '../api';
 import PaymentStatus from './PaymentStatus';
 
 const CATEGORIES = ['Food', 'Transport', 'Shopping', 'Entertainment', 'Education', 'Other'];
 
-export default function PayContact({ userId, onSuccess }) {
+export default memo(function PayContact({ userId, onSuccess }) {
   const [step, setStep] = useState(1); // 1: input, 2: category, 3: status
   const [phone, setPhone] = useState('');
   const [amount, setAmount] = useState('');
@@ -18,29 +18,14 @@ export default function PayContact({ userId, onSuccess }) {
 
   const handlePay = async () => {
     if (!phone || !amount || !category) return setError('Missing fields');
+    if (parseFloat(amount) <= 0) return setError('Enter valid amount');
     setError(''); setLoading(true);
     try {
-      const { getUserProfile, addTransaction } = await import('../firebase/db');
-      const profile = await getUserProfile(userId);
-      const amt = parseFloat(amount);
-
-      if (!profile || profile.wallet < amt) {
-        throw new Error('Insufficient balance');
-      }
-
-      // Update wallet balance
-      const { doc, updateDoc, db } = await import('firebase/firestore');
-      await updateDoc(doc(db, "users", userId), {
-        wallet: profile.wallet - amt
-      });
-
-      // Record transaction
-      await addTransaction(userId, {
-        amount: amt,
-        type: 'debit',
+      await api.post('/api/transactions', {
+        user_id: userId,
+        amount: parseFloat(amount),
         category,
-        description: `Sent to ${phone}`,
-        date: new Date().toISOString()
+        note: `Sent to ${phone}`
       });
 
       setReceiverName(phone);
@@ -48,7 +33,7 @@ export default function PayContact({ userId, onSuccess }) {
       setStep(3);
     } catch (err) {
       console.error(err);
-      setError(err.message === 'Insufficient balance' ? 'Insufficient balance' : 'Payment failed');
+      setError(err.response?.data?.detail || 'Payment failed');
       setPaymentStatus('failure');
       setStep(3);
     }
@@ -144,4 +129,4 @@ export default function PayContact({ userId, onSuccess }) {
       {error && <p style={{ color: 'var(--error)', fontSize: '0.85rem', textAlign: 'center', marginTop: '1rem', fontWeight: 600 }}>{error}</p>}
     </div>
   );
-}
+});

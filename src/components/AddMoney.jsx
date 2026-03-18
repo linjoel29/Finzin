@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import api from '../api';
 
-export default function AddMoney({ userId, onSuccess }) {
+export default memo(function AddMoney({ userId, onSuccess }) {
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -9,24 +9,18 @@ export default function AddMoney({ userId, onSuccess }) {
   const quickAmounts = [100, 200, 500, 1000];
 
   const handleAdd = async () => {
+    if (!amount || parseFloat(amount) <= 0) {
+      alert("Enter valid amount");
+      return;
+    }
+
     setError(''); setLoading(true);
     try {
-      const { getUserProfile, addTransaction } = await import('../firebase/db');
-      const { doc, updateDoc, db } = await import('firebase/firestore');
-      
-      const profile = await getUserProfile(userId);
-      const amt = parseFloat(amount);
-
-      await updateDoc(doc(db, "users", userId), {
-        wallet: (profile?.wallet || 0) + amt
-      });
-
-      await addTransaction(userId, {
-        amount: amt,
-        type: 'credit',
+      await api.post('/api/transactions', {
+        user_id: userId,
+        amount: parseFloat(amount),
         category: 'Income',
-        description: 'Added money to wallet',
-        date: new Date().toISOString()
+        note: 'Added money to wallet'
       });
 
       onSuccess(`✅ Added ₹${amount} to wallet!`);
@@ -55,4 +49,4 @@ export default function AddMoney({ userId, onSuccess }) {
       </button>
     </div>
   );
-}
+});

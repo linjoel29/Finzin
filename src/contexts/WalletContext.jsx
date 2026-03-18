@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback } from 'react';
-import { getUserProfile, getTransactions } from '../firebase/db';
+import api from '../api';
 
 const WalletContext = createContext(null);
 
@@ -11,15 +11,17 @@ export function WalletProvider({ children }) {
   const fetchWallet = useCallback(async (userId) => {
     if (!userId) return;
     try {
-      const profile = await getUserProfile(userId);
-      const txns = await getTransactions(userId);
+      const [walletRes, txnsRes] = await Promise.all([
+        api.get(`/api/wallet/${userId}`).catch(() => ({ data: { wallet: 0, savings: 0 } })),
+        api.get(`/api/wallet/transactions/${userId}`).catch(() => ({ data: { transactions: [] } }))
+      ]);
       
-      if (profile) {
-        setWallet(profile.wallet || 0);
-        setSavings(profile.savings || 0);
-      }
-      setTransactions(txns || []);
-    } catch (err) { console.error('Wallet fetch error', err); }
+      setWallet(walletRes.data.wallet || 0);
+      setSavings(walletRes.data.savings || 0);
+      setTransactions(txnsRes.data.transactions || []);
+    } catch (err) { 
+      console.error('Wallet fetch error', err); 
+    }
   }, []);
 
   return (

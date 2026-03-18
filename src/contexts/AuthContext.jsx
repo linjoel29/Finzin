@@ -1,28 +1,22 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import { subscribeToAuthChanges, logoutUser } from '../firebase/auth';
+import { createContext, useContext, useState } from 'react';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const unsubscribe = subscribeToAuthChanges((currentUser) => {
-      setUser(currentUser);
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
+  const [user, setUser] = useState(() => {
+    const storedUser = localStorage.getItem('finzin_user');
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
+  const loading = false;
 
   const login = (userData) => {
-    // This is now handled by onAuthStateChanged in Firebase
     setUser(userData);
+    localStorage.setItem('finzin_user', JSON.stringify(userData));
   };
 
-  const logout = async () => {
-    await logoutUser();
+  const logout = () => {
     setUser(null);
+    localStorage.removeItem('finzin_user');
   };
 
   return (

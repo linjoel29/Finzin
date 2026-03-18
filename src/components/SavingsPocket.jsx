@@ -1,7 +1,6 @@
-import { useState } from 'react';
-import api from '../api';
+import { useState, memo } from 'react';
 
-export default function SavingsPocket({ userId, wallet, savings, onSuccess }) {
+export default memo(function SavingsPocket({ userId, wallet, savings, onSuccess }) {
   const [mode, setMode] = useState('move'); // 'move' | 'withdraw'
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
@@ -88,4 +87,4 @@ export default function SavingsPocket({ userId, wallet, savings, onSuccess }) {
       </button>
     </div>
   );
-}
+});

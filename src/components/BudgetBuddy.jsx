@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Send, X, AlertCircle, Bot, Zap } from 'lucide-react';
 import api from '../api';
@@ -9,7 +9,7 @@ const NOTIF_STYLES = {
   success: { bg: 'rgba(34, 197, 94, 0.08)', border: 'rgba(34, 197, 94, 0.2)', color: 'var(--success)' },
 };
 
-export default function BudgetBuddy({ user, monthlyBudget = 5000, spentThisWeek = 0, remainingBalance = 5000, topCategory = 'Food', triggerRefresh }) {
+export default memo(function BudgetBuddy({ user, monthlyBudget = 5000, spentThisWeek = 0, remainingBalance = 5000, topCategory = 'Food', triggerRefresh }) {
   const [advice, setAdvice] = useState('');
   const [displayedAdvice, setDisplayedAdvice] = useState('');
   const [notifications, setNotifications] = useState([]);
@@ -267,4 +267,4 @@ export default function BudgetBuddy({ user, monthlyBudget = 5000, spentThisWeek 
       </motion.div>
     </div>
   );
-}
+});

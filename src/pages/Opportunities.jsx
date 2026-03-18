@@ -3,9 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Rocket, GraduationCap, Briefcase, Calendar, 
   MapPin, IndianRupee, ChevronRight, Sparkles,
-  Heart, Globe, Loader2, ArrowUpRight
+  Heart, Globe, ArrowUpRight
 } from 'lucide-react';
 import api from '../api';
+import Skeleton from '../components/Skeleton';
 
 const MOCK_SCHOLARSHIPS = [
   { id: 's1', name: 'HDFC Badhte Kadam Scholarship', eligibility: 'Class 9-12 / UG Students', amount: '₹ 1,00,000', deadline: '31 Mar 2026', link: 'https://www.buddy4study.com/page/hdfc-bank-parivartan-ecss-scholarship' },
@@ -103,11 +104,25 @@ export default function Opportunities() {
           style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}
         >
           {loading ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '200px', gap: '1rem' }}>
-              <Loader2 className="animate-spin" size={32} color="var(--primary)" />
-              <p style={{ fontWeight: 700, color: 'var(--text-secondary)' }}>Curating opportunities...</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              {[1, 2, 3].map(i => (
+                <div key={i} className="glass-card" style={{ padding: '1.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                    <div style={{ flex: 1, paddingRight: '1rem' }}>
+                      <Skeleton width="80%" height="1.2rem" style={{ marginBottom: '0.5rem' }} />
+                      <Skeleton width="40%" height="0.8rem" />
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <Skeleton width="80px" height="1.5rem" style={{ marginBottom: '0.3rem' }} />
+                      <Skeleton width="40px" height="0.6rem" />
+                    </div>
+                  </div>
+                  <Skeleton width="60%" height="0.8rem" style={{ marginBottom: '1.5rem' }} />
+                  <Skeleton width="100%" height="3rem" borderRadius="14px" />
+                </div>
+              ))}
             </div>
-          ) : tab === 'scholarships' ? (
+          ) : tab === 'scholarships' && scholarships?.length > 0 ? (
             scholarships.map((s, i) => (
               <motion.div 
                 key={s.id} 
@@ -145,7 +160,7 @@ export default function Opportunities() {
                 </button>
               </motion.div>
             ))
-          ) : (
+          ) : tab === 'jobs' && jobs?.length > 0 ? (
             jobs.map((j, i) => (
               <motion.div 
                 key={j.id} 
@@ -191,6 +206,10 @@ export default function Opportunities() {
                 </button>
               </motion.div>
             ))
+          ) : (
+            <div style={{ textAlign: 'center', padding: '4rem 1rem' }}>
+              <p style={{ color: 'var(--text-secondary)', fontWeight: 800, fontSize: '1.1rem' }}>No items available right now. Check back soon!</p>
+            </div>
           )}
         </motion.div>
       </AnimatePresence>

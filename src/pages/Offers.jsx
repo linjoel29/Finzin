@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, Sparkles, Loader2, ArrowUpRight, AlertTriangle, ExternalLink, X } from 'lucide-react';
+import { ShoppingBag, Sparkles, ArrowUpRight, AlertTriangle, ExternalLink, X } from 'lucide-react';
 import api from '../api';
+import Skeleton from '../components/Skeleton';
 
 const MOCK_OFFERS = [
   { id: 'o1', title: 'Apple Student Discount', description: 'Save up to ₹10,000 on Mac or iPad with education pricing.', platform: 'Apple Education Store', discount: '10', expiry: 'Ongoing', link: 'https://www.apple.com/in-edu/store', emoji: '💻', tag: '🔥 Trending', color: '#000' },
@@ -80,7 +81,7 @@ export default function Offers() {
   const [selectedOffer, setSelectedOffer] = useState(null);
 
   useEffect(() => {
-    setLoading(true);
+    // Initial fetch
     api.get('/api/offers')
       .then(r => setOffers(r.data.offers?.length > 0 ? r.data.offers : MOCK_OFFERS))
       .catch((err) => {
@@ -115,20 +116,26 @@ export default function Offers() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         <AnimatePresence mode="wait">
           {loading ? (
-            <motion.div 
-              key="loader"
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '300px', gap: '1.25rem' }}
-            >
-              <div style={{ position: 'relative' }}>
-                <Loader2 className="animate-spin" size={48} color="var(--primary)" />
-                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Zap size={18} color="var(--primary)" fill="var(--primary)" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              {[1, 2, 3].map(i => (
+                <div key={i} className="glass-card" style={{ padding: '1.75rem', height: '220px', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  <div style={{ display: 'flex', gap: '1.25rem' }}>
+                    <Skeleton width="70px" height="70px" borderRadius="22px" />
+                    <div style={{ flex: 1 }}>
+                      <Skeleton width="60%" height="1.5rem" style={{ marginBottom: '0.5rem' }} />
+                      <Skeleton width="40%" height="0.8rem" />
+                    </div>
+                  </div>
+                  <Skeleton width="100%" height="1rem" />
+                  <Skeleton width="80%" height="1rem" />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 'auto' }}>
+                    <Skeleton width="100px" height="2rem" />
+                    <Skeleton width="120px" height="2.8rem" borderRadius="1rem" />
+                  </div>
                 </div>
-              </div>
-              <p style={{ fontWeight: 800, color: 'var(--text-secondary)', fontSize: '1.1rem' }}>Fetching best student offers...</p>
-            </motion.div>
-          ) : offers.length > 0 ? (
+              ))}
+            </div>
+          ) : offers?.length > 0 ? (
             offers.map((o, i) => (
               <motion.div 
                 initial={{ opacity: 0, y: 30 }}

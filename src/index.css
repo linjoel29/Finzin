@@ -32,7 +32,7 @@
   --glass-bg: rgba(15, 23, 42, 0.7);
   --glass-border: rgba(255, 255, 255, 0.1);
   --card-bg: rgba(30, 41, 59, 0.7);
-  --card-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
   --input-bg: rgba(15, 23, 42, 0.6);
   --border-color: rgba(255, 255, 255, 0.1);
   --nav-bg: rgba(15, 23, 42, 0.8);
@@ -56,16 +56,16 @@ body {
 /* Premium Layout Utilities */
 .glass {
   background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--glass-border);
   box-shadow: var(--card-shadow);
 }
 
 .glass-card {
   background: var(--card-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border: 1px solid var(--border-color);
   border-radius: 1.5rem;
   padding: 1.5rem;

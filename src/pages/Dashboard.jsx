@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Bell, QrCode, Smartphone, Plus, PiggyBank, LogOut, 
@@ -16,7 +16,7 @@ import BudgetBuddy from '../components/BudgetBuddy';
 
 const MONTHLY_BUDGET = 5000;
 
-function Modal({ title, children, onClose }) {
+const Modal = memo(({ title, children, onClose }) => {
   return (
     <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1000 }}>
       <motion.div 
@@ -44,7 +44,14 @@ function Modal({ title, children, onClose }) {
       </motion.div>
     </div>
   );
-}
+});
+
+const QUICK_ACTIONS = [
+  { icon: <QrCode size={26} />, label: 'Scan & Pay', key: 'scan', color: 'var(--secondary)' },
+  { icon: <Smartphone size={26} />, label: 'Pay Phone', key: 'pay', color: '#8b5cf6' },
+  { icon: <Plus size={26} />, label: 'Add Money', key: 'addmoney', color: 'var(--success)' },
+  { icon: <PiggyBank size={26} />, label: 'Savings', key: 'savings', color: 'var(--warning)' },
+];
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
@@ -76,12 +83,12 @@ export default function Dashboard() {
 
   useEffect(() => { if (user) fetchWallet(user.uid); }, [user, fetchWallet]);
 
-  const showToast = (msg, type = 'success') => {
+  const showToast = useCallback((msg, type = 'success') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3000);
-  };
+  }, []);
 
-  const refreshWallet = async () => {
+  const refreshWallet = useCallback(async () => {
     try {
       if (user) {
         await fetchWallet(user.uid);
@@ -90,14 +97,8 @@ export default function Dashboard() {
     } catch (e) {
       console.error('Wallet refresh failed', e);
     }
-  };
+  }, [user, fetchWallet]);
 
-  const quickActions = [
-    { icon: <QrCode size={26} />, label: 'Scan & Pay', key: 'scan', color: 'var(--secondary)' },
-    { icon: <Smartphone size={26} />, label: 'Pay Phone', key: 'pay', color: '#8b5cf6' },
-    { icon: <Plus size={26} />, label: 'Add Money', key: 'addmoney', color: 'var(--success)' },
-    { icon: <PiggyBank size={26} />, label: 'Savings', key: 'savings', color: 'var(--warning)' },
-  ];
 
   return (
     <div style={{ padding: '1.5rem', maxWidth: '520px', margin: '0 auto', paddingBottom: '120px' }}>
@@ -204,7 +205,7 @@ export default function Dashboard() {
       {/* Quick Actions Grid */}
       <h3 style={{ fontWeight: 900, fontSize: '1.1rem', marginBottom: '1.25rem', paddingLeft: '0.5rem' }}>Quick Actions</h3>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
-        {quickActions.map(({ icon, label, key, color }) => (
+        {QUICK_ACTIONS.map(({ icon, label, key, color }) => (
           <motion.button 
             key={key} 
             whileTap={{ scale: 0.9 }}

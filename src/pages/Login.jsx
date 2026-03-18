@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, User, Phone, ArrowRight, Wallet2, Sparkles } from 'lucide-react';
-import { loginUser, registerUser } from '../firebase/auth';
-import { createUserProfile } from '../firebase/db';
+import api from '../api';
 import { useAuth } from '../contexts/AuthContext';
 import { useWallet } from '../contexts/WalletContext';
 
@@ -38,45 +37,32 @@ export default function Login() {
     setLoading(true);
     try {
       if (isLogin) {
-        const userCred = await loginUser(form.email, form.password);
-        login(userCred.user);
-        await fetchWallet(userCred.user.uid);
-        navigate('/dashboard');
+        const res = await api.post('/api/auth/login', { email: form.email, password: form.password });
+        if (res.data.success) {
+          login(res.data.user);
+          await fetchWallet(res.data.user.id);
+          navigate('/dashboard');
+        }
       } else {
-        const userCred = await registerUser(form.email, form.password);
-        await createUserProfile(userCred.user.uid, {
+        const res = await api.post('/api/auth/register', {
           name: form.name,
           email: form.email,
+          password: form.password,
           phone: form.phone
         });
         
-        console.log("Registration successful for:", userCred.user.email);
-        alert("Registration successful! Please login to continue.");
-        setIsLogin(true); 
-        setForm({ ...form, password: '' });
+        if (res.data.success) {
+          console.log("Registration successful for:", res.data.user.email);
+          alert("Registration successful! Please login to continue.");
+          setIsLogin(true); 
+          setForm({ ...form, password: '' });
+        }
       }
     } catch (err) {
-      console.error("Firebase Error:", err);
-      let message = "";
-      
-      switch (err.code) {
-        case "auth/email-already-in-use":
-          message = "This email is already registered. Please login.";
-          break;
-        case "auth/invalid-email":
-          message = "Invalid email format.";
-          break;
-        case "auth/weak-password":
-          message = "Password must be at least 6 characters.";
-          break;
-        case "auth/user-not-found":
-          message = "No account found with this email.";
-          break;
-        case "auth/wrong-password":
-          message = "Incorrect password.";
-          break;
-        default:
-          message = err.message || "Something went wrong. Please try again.";
+      console.error("API Error:", err);
+      let message = "Something went wrong. Please try again.";
+      if (err.response && err.response.data && err.response.data.detail) {
+        message = err.response.data.detail;
       }
       
       setError(message);
@@ -96,8 +82,8 @@ export default function Login() {
       position: 'relative', overflow: 'hidden'
     }}>
       {/* Dynamic Background Orbs */}
-      <div style={{ position: 'absolute', top: '-10%', right: '-10%', width: '500px', height: '500px', background: 'radial-gradient(circle, var(--accent-start) 0%, transparent 70%)', filter: 'blur(80px)', pointerEvents: 'none', opacity: 0.6 }} />
-      <div style={{ position: 'absolute', bottom: '-10%', left: '-10%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%)', filter: 'blur(80px)', pointerEvents: 'none', opacity: 0.6 }} />
+      <div style={{ position: 'absolute', top: '-10%', right: '-10%', width: '500px', height: '500px', background: 'radial-gradient(circle, var(--accent-start) 0%, transparent 70%)', pointerEvents: 'none', opacity: 0.4 }} />
+      <div style={{ position: 'absolute', bottom: '-10%', left: '-10%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%)', pointerEvents: 'none', opacity: 0.4 }} />
 
       <motion.div 
         initial={{ opacity: 0, scale: 0.9, y: 30 }}

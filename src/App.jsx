@@ -1,18 +1,28 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { WalletProvider } from './contexts/WalletContext';
-import { Sun, Moon } from 'lucide-react';
-import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import AIBudget from './pages/AIBudget';
-import Offers from './pages/Offers';
-import Opportunities from './pages/Opportunities';
+import ErrorBoundary from './components/ErrorBoundary';
+import { Sun, Moon, Loader2 } from 'lucide-react';
 import Navbar from './components/Navbar';
+
+const Login = lazy(() => import('./pages/Login'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const AIBudget = lazy(() => import('./pages/AIBudget'));
+const Offers = lazy(() => import('./pages/Offers'));
+const Opportunities = lazy(() => import('./pages/Opportunities'));
+
+function PageLoader() {
+  return (
+    <div style={{ height: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Loader2 size={40} className="animate-spin" color="var(--primary)" />
+    </div>
+  );
+}
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
-  return user ? children : <Navigate to="/login" replace />;
+  return user ? <ErrorBoundary>{children}</ErrorBoundary> : <Navigate to="/login" replace />;
 }
 
 function AppLayout({ children, theme, toggleTheme }) {
@@ -70,38 +80,40 @@ export default function App() {
     <AuthProvider>
       <WalletProvider>
         <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <AppLayout theme={theme} toggleTheme={toggleTheme}>
-                  <Dashboard />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/budget" element={
-              <ProtectedRoute>
-                <AppLayout theme={theme} toggleTheme={toggleTheme}>
-                  <AIBudget />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/offers" element={
-              <ProtectedRoute>
-                <AppLayout theme={theme} toggleTheme={toggleTheme}>
-                  <Offers />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/opportunities" element={
-              <ProtectedRoute>
-                <AppLayout theme={theme} toggleTheme={toggleTheme}>
-                  <Opportunities />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <AppLayout theme={theme} toggleTheme={toggleTheme}>
+                    <Dashboard />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/budget" element={
+                <ProtectedRoute>
+                  <AppLayout theme={theme} toggleTheme={toggleTheme}>
+                    <AIBudget />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/offers" element={
+                <ProtectedRoute>
+                  <AppLayout theme={theme} toggleTheme={toggleTheme}>
+                    <Offers />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/opportunities" element={
+                <ProtectedRoute>
+                  <AppLayout theme={theme} toggleTheme={toggleTheme}>
+                    <Opportunities />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+          </Suspense>
         </BrowserRouter>
       </WalletProvider>
     </AuthProvider>
