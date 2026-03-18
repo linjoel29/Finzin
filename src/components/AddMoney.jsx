@@ -16,17 +16,21 @@ export default memo(function AddMoney({ userId, onSuccess }) {
 
     setError(''); setLoading(true);
     try {
-      await api.post('/api/transactions', {
+      const res = await api.post('/api/transactions', {
         user_id: userId,
         amount: parseFloat(amount),
         category: 'Income',
         note: 'Added money to wallet'
       });
 
-      onSuccess(`✅ Added ₹${amount} to wallet!`);
+      if (res.data) {
+        onSuccess(`✅ Added ₹${amount} to wallet!`);
+      }
     } catch (err) {
-      console.error(err);
-      setError('Failed to add money. Please try again.');
+      console.error("Add money error:", err);
+      const msg = err.response?.data?.message || err.message || 'Failed to add money. Please try again.';
+      setError(msg);
+      alert("Failed to add transaction");
     }
     setLoading(false);
   };
