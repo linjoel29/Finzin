@@ -18,7 +18,7 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(isLogin ? "Login button clicked" : "Register button clicked");
+    console.log("Login clicked");
     setError(''); 
 
     // Validation
@@ -165,7 +165,7 @@ export default function Login() {
               </motion.div>
             )}
 
-            <button className="btn-primary" type="submit" disabled={loading} style={{ width: '100%', padding: '1.1rem', fontSize: '1.1rem' }}>
+            <button className="btn-primary" type="button" onClick={handleSubmit} disabled={loading} style={{ width: '100%', padding: '1.1rem', fontSize: '1.1rem' }}>
               {loading ? <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }}>⚡</motion.div> : isLogin ? 'Secure Sign In' : 'Create Account'}
               {!loading && <ArrowRight size={22} />}
             </button>
