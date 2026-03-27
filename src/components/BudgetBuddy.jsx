@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo, memo } from 'react';
+import { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Send, X, AlertCircle, Bot, Zap } from 'lucide-react';
 import api from '../api';
@@ -9,15 +9,29 @@ const NOTIF_STYLES = {
   success: { bg: 'rgba(34, 197, 94, 0.08)', border: 'rgba(34, 197, 94, 0.2)', color: 'var(--success)' },
 };
 
+const TypewriterText = memo(({ text, speed = 12 }) => {
+  const [displayed, setDisplayed] = useState('');
+  useEffect(() => {
+    setDisplayed('');
+    if (!text) return;
+    let i = 0;
+    const interval = setInterval(() => {
+      setDisplayed(prev => prev + text[i]);
+      i++;
+      if (i >= text.length) clearInterval(interval);
+    }, speed);
+    return () => clearInterval(interval);
+  }, [text, speed]);
+  return <>{displayed}{!displayed && <span style={{ opacity: 0.2 }}>Initializing insights...</span>}</>;
+});
+
 export default memo(function BudgetBuddy({ user, monthlyBudget = 5000, spentThisWeek = 0, remainingBalance = 5000, topCategory = 'Food', triggerRefresh }) {
   const [advice, setAdvice] = useState('');
-  const [displayedAdvice, setDisplayedAdvice] = useState('');
   const [notifications, setNotifications] = useState([]);
   const [budgetUsedPct, setBudgetUsedPct] = useState(0);
   const [loading, setLoading] = useState(false);
   const [question, setQuestion] = useState('');
   const [askMode, setAskMode] = useState(false);
-  const typingRef = useRef(null);
 
   const fetchAdvice = useCallback(async (customQuestion = '') => {
     if (!user) return;
@@ -62,22 +76,11 @@ export default memo(function BudgetBuddy({ user, monthlyBudget = 5000, spentThis
   }, [user, monthlyBudget, spentThisWeek, remainingBalance, topCategory]);
 
   useEffect(() => {
-    fetchAdvice();
+    const timer = setTimeout(() => {
+      fetchAdvice();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [fetchAdvice, triggerRefresh]);
-
-  useEffect(() => {
-    if (advice) {
-      setDisplayedAdvice('');
-      let i = 0;
-      clearInterval(typingRef.current);
-      typingRef.current = setInterval(() => {
-        setDisplayedAdvice((prev) => prev + advice[i]);
-        i++;
-        if (i >= advice.length) clearInterval(typingRef.current);
-      }, 12);
-    }
-    return () => clearInterval(typingRef.current);
-  }, [advice]);
 
   const handleAsk = async (e) => {
     e.preventDefault();
@@ -199,8 +202,7 @@ export default memo(function BudgetBuddy({ user, monthlyBudget = 5000, spentThis
             </div>
           ) : (
             <p style={{ fontSize: '0.92rem', color: 'var(--text-primary)', lineHeight: 1.7, fontWeight: 600 }}>
-              {displayedAdvice}
-              {!displayedAdvice && <span style={{ opacity: 0.2 }}>Initializing insights...</span>}
+              <TypewriterText text={advice} />
             </p>
           )}
         </div>

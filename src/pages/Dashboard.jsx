@@ -8,10 +8,11 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useWallet } from '../contexts/WalletContext';
 import { useNavigate } from 'react-router-dom';
-import ScanPay from '../components/ScanPay';
-import PayContact from '../components/PayContact';
-import AddMoney from '../components/AddMoney';
-import SavingsPocket from '../components/SavingsPocket';
+import { lazy, Suspense } from 'react';
+const ScanPay = lazy(() => import('../components/ScanPay'));
+const PayContact = lazy(() => import('../components/PayContact'));
+const AddMoney = lazy(() => import('../components/AddMoney'));
+const SavingsPocket = lazy(() => import('../components/SavingsPocket'));
 import BudgetBuddy from '../components/BudgetBuddy';
 
 const MONTHLY_BUDGET = 5000;
@@ -55,7 +56,7 @@ const QUICK_ACTIONS = [
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
-  const { transactions, fetchWallet, wallet, savings, setWallet, setSavings, setTransactions } = useWallet();
+  const { transactions, fetchWallet, wallet, savings } = useWallet();
   const navigate = useNavigate();
   const [modal, setModal] = useState(null);
   const [toast, setToast] = useState(null);
@@ -91,7 +92,7 @@ export default function Dashboard() {
   const refreshWallet = useCallback(async () => {
     try {
       if (user) {
-        await fetchWallet(user.uid);
+        await fetchWallet(user.uid, true);
         setBudgetRefresh(v => v + 1);
       }
     } catch (e) {
@@ -287,10 +288,10 @@ export default function Dashboard() {
       </motion.button>
 
       <AnimatePresence>
-        {modal === 'scan' && <Modal title="Scan & Pay" onClose={() => setModal(null)}><ScanPay userId={user.uid} onSuccess={(msg) => { refreshWallet(); setModal(null); showToast(msg); }} /></Modal>}
-        {modal === 'pay' && <Modal title="Pay Contact" onClose={() => setModal(null)}><PayContact userId={user.uid} onSuccess={(msg) => { refreshWallet(); setModal(null); showToast(msg); }} /></Modal>}
-        {modal === 'addmoney' && <Modal title="Add Money" onClose={() => setModal(null)}><AddMoney userId={user.uid} onSuccess={(msg) => { refreshWallet(); setModal(null); showToast(msg); }} /></Modal>}
-        {modal === 'savings' && <Modal title="Savings Pocket" onClose={() => setModal(null)}><SavingsPocket userId={user.uid} wallet={wallet} savings={savings} onSuccess={(msg) => { refreshWallet(); setModal(null); showToast(msg); }} /></Modal>}
+        {modal === 'scan' && <Modal title="Scan & Pay" onClose={() => setModal(null)}><Suspense fallback={<div style={{padding: '2rem', textAlign: 'center'}}>Loading...</div>}><ScanPay userId={user.uid} onSuccess={(msg) => { refreshWallet(); setModal(null); showToast(msg); }} /></Suspense></Modal>}
+        {modal === 'pay' && <Modal title="Pay Contact" onClose={() => setModal(null)}><Suspense fallback={<div style={{padding: '2rem', textAlign: 'center'}}>Loading...</div>}><PayContact userId={user.uid} onSuccess={(msg) => { refreshWallet(); setModal(null); showToast(msg); }} /></Suspense></Modal>}
+        {modal === 'addmoney' && <Modal title="Add Money" onClose={() => setModal(null)}><Suspense fallback={<div style={{padding: '2rem', textAlign: 'center'}}>Loading...</div>}><AddMoney userId={user.uid} onSuccess={(msg) => { refreshWallet(); setModal(null); showToast(msg); }} /></Suspense></Modal>}
+        {modal === 'savings' && <Modal title="Savings Pocket" onClose={() => setModal(null)}><Suspense fallback={<div style={{padding: '2rem', textAlign: 'center'}}>Loading...</div>}><SavingsPocket userId={user.uid} wallet={wallet} savings={savings} onSuccess={(msg) => { refreshWallet(); setModal(null); showToast(msg); }} /></Suspense></Modal>}
         {toast && (
           <motion.div 
             initial={{ y: 20, opacity: 0, x: '-50%' }}

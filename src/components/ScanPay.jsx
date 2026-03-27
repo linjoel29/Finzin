@@ -2,8 +2,16 @@ import { useState, useRef, useEffect, memo } from 'react';
 import api from '../api';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Camera, Upload, ChevronLeft, CreditCard } from 'lucide-react';
-import { Html5Qrcode } from "html5-qrcode";
 import PaymentStatus from './PaymentStatus';
+
+let Html5QrcodeClass = null;
+const getHtml5Qrcode = async () => {
+  if (!Html5QrcodeClass) {
+    const module = await import('html5-qrcode');
+    Html5QrcodeClass = module.Html5Qrcode;
+  }
+  return Html5QrcodeClass;
+};
 
 const BRAND_CATEGORIES = {
   zomato: 'Food',
@@ -55,29 +63,28 @@ export default memo(function ScanPay({ userId, onSuccess }) {
     setIsScanning(true);
     setError('');
     
-    setTimeout(() => {
-      try {
-        const html5QrCode = new Html5Qrcode("reader");
-        scannerRef.current = html5QrCode;
+    try {
+      const Html5Qrcode = await getHtml5Qrcode();
+      const html5QrCode = new Html5Qrcode("reader");
+      scannerRef.current = html5QrCode;
 
-        const qrCodeSuccessCallback = (decodedText) => {
-          handleScanSuccess(decodedText);
-        };
+      const qrCodeSuccessCallback = (decodedText) => {
+        handleScanSuccess(decodedText);
+      };
 
-        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+      const config = { fps: 10, qrbox: { width: 250, height: 250 } };
 
-        html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback)
-          .catch((err) => {
-            console.error("Scanner failed to start:", err);
-            setError('Camera access denied or error occurred.');
-            setIsScanning(false);
-          });
-      } catch (err) {
-        console.error("Scanner init error:", err);
-        setError('Failed to initialize scanner.');
-        setIsScanning(false);
-      }
-    }, 100);
+      html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback)
+        .catch((err) => {
+          console.error("Scanner failed to start:", err);
+          setError('Camera access denied or error occurred.');
+          setIsScanning(false);
+        });
+    } catch (err) {
+      console.error("Scanner init error:", err);
+      setError('Failed to initialize scanner library.');
+      setIsScanning(false);
+    }
   };
 
   const stopCamera = async () => {
@@ -92,22 +99,29 @@ export default memo(function ScanPay({ userId, onSuccess }) {
     }
   };
 
-  const handleFileUpload = (e) => {
+  const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     setUploadMessage('Processing...');
     
-    const html5QrCode = new Html5Qrcode("reader-hidden");
-    html5QrCode.scanFile(file, true)
-      .then(decodedText => {
-        handleScanSuccess(decodedText);
-        setUploadMessage('');
-      })
-      .catch(err => {
-        console.error("File scan failed:", err);
-        setError('QR code not found in image.');
-        setUploadMessage('');
-      });
+    try {
+      const Html5Qrcode = await getHtml5Qrcode();
+      const html5QrCode = new Html5Qrcode("reader-hidden");
+      html5QrCode.scanFile(file, true)
+        .then(decodedText => {
+          handleScanSuccess(decodedText);
+          setUploadMessage('');
+        })
+        .catch(err => {
+          console.error("File scan failed:", err);
+          setError('QR code not found in image.');
+          setUploadMessage('');
+        });
+    } catch (err) {
+      console.error("File processing init failed:", err);
+      setError('Failed to initialize scanner library.');
+      setUploadMessage('');
+    }
   };
 
   const handlePay = async () => {

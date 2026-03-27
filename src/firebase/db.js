@@ -6,8 +6,7 @@ import {
   getDocs, 
   addDoc, 
   query, 
-  orderBy, 
-  limit 
+  orderBy 
 } from "firebase/firestore";
 import { db } from "./config";
 
